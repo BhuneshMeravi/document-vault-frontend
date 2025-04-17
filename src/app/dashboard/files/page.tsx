@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { CircleCheck, CircleAlert, MoreHorizontal, Search, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,25 +24,35 @@ import {
 import { formatBytes, formatDate } from "@/lib/utils";
 import { useDocuments } from "@/hooks/use-documents";
 import { Pagination } from "@/components/pagination";
+import { FileUploader } from "@/components/DocumentUploader"; 
 
 export default function FilesPage() {
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const { data, isLoading } = useDocuments({ page, search });
+  const { data, isLoading, error, refetch } = useDocuments({ page, search });
+
+  useEffect(() => {
+    // Debug logging
+    console.log("Document data:", data);
+    console.log("Is loading:", isLoading);
+    console.log("Error:", error);
+  }, [data, isLoading, error]);
 
   function handleView(id: string) {
     router.push(`/dashboard/files/${id}`);
   }
 
+  // Handle successful upload
+  const handleUploadComplete = () => {
+    refetch(); // Refresh the document list
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Documents</h2>
-        <Button onClick={() => {}}>
-          <Upload className="mr-2 h-4 w-4" />
-          Upload Document
-        </Button>
+        <FileUploader onUploadComplete={handleUploadComplete} />
       </div>
       <div className="flex items-center space-x-2">
         <div className="relative flex-1">
@@ -55,6 +65,14 @@ export default function FilesPage() {
           />
         </div>
       </div>
+      
+      {/* Debug info */}
+      {error && (
+        <div className="p-4 mb-4 bg-red-100 text-red-700 rounded-md">
+          Error loading documents: {error.message}
+        </div>
+      )}
+      
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -78,11 +96,13 @@ export default function FilesPage() {
                   ))}
                 </TableRow>
               ))
-            ) : data?.data?.length ? (
+            ) : data?.data && data.data.length > 0 ? (
               data.data.map((document) => (
                 <TableRow key={document.id}>
                   <TableCell className="font-medium">{document.filename}</TableCell>
-                  <TableCell>{document.contentType.split('/')[1].toUpperCase()}</TableCell>
+                  <TableCell>
+                    {document.contentType?.split('/')[1]?.toUpperCase() || document.contentType}
+                  </TableCell>
                   <TableCell>{formatBytes(document.size)}</TableCell>
                   <TableCell>
                     <div className="flex items-center">
@@ -127,14 +147,16 @@ export default function FilesPage() {
             ) : (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center">
-                  No documents found.
+                  No documents found. {data ? `Response received but empty.` : `No data received.`}
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
-      {data?.meta && (
+      
+      {/* Let's also update the Pagination check */}
+      {data?.meta && data.meta.pages > 1 && (
         <Pagination
           currentPage={page}
           totalPages={data.meta.pages}

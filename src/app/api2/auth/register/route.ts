@@ -15,12 +15,12 @@ export async function POST(request: Request) {
 
     const result = await response.json();
 
-    // if (!response.ok) {
-    //   return NextResponse.json(
-    //     { error: result.message || "Registration failed" }, 
-    //     { status: response.status }
-    //   );
-    // }
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: result.message || "Registration failed" }, 
+        { status: response.status }
+      );
+    }
 
     return NextResponse.json(result);
   } catch (error) {

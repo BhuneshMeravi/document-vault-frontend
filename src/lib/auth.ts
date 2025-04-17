@@ -1,31 +1,24 @@
-import { LoginCredentials, RegisterCredentials, AuthResponse } from "@/types/auth";
+import { fetchAPI } from "./api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
-
-export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
-  const response = await fetch(`${API_URL}/auth/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(credentials),
+export async function login(email: string, password: string) {
+  console.log("Logging in with:", { email, password });
+  
+  const response = await fetchAPI('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
   });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Failed to login");
+  
+  if (response.accessToken) {
+    localStorage.setItem('accessToken', response.accessToken);
   }
-
-  return response.json();
+  
+  return response;
 }
 
-export async function register(credentials: RegisterCredentials): Promise<AuthResponse> {
-  const response = await fetch(`${API_URL}/auth/register`, {
+export async function register(email: string, password: string, name: string) {
+  const response = await fetchAPI(`/auth/register`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(credentials),
+    body: JSON.stringify({ email, password, name }),
   });
 
   if (!response.ok) {
@@ -36,12 +29,9 @@ export async function register(credentials: RegisterCredentials): Promise<AuthRe
   return response.json();
 }
 
-export async function getUserProfile(token: string) {
-  const response = await fetch(`${API_URL}/users/profile`, {
+export async function getUserProfile() {
+  const response = await fetchAPI(`/users/profile`, {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   });
 
   if (!response.ok) {
@@ -51,17 +41,28 @@ export async function getUserProfile(token: string) {
   return response.json();
 }
 
-export function setToken(token: string) {
-  localStorage.setItem("auth_token", token);
-}
+export async function verifyAuth() {
+  try {
+    const data = await fetchAPI("/auth/verify", {
+      method: "POST",
+    });
 
-export function getToken() {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("auth_token");
+    return { authenticated: true, user: data.user };
+  } catch (error) {
+    console.error("Auth verification failed:", error);
+    return { authenticated: false, user: null };
   }
-  return null;
 }
 
-export function removeToken() {
-  localStorage.removeItem("auth_token");
+export async function logout() {
+  try {
+    await fetchAPI('/auth/logout', {
+      method: 'POST',
+    });
+  } catch (error) {
+    console.error('Logout failed:', error);
+  } finally {
+    // Always clear token on logout attempt
+    localStorage.removeItem('accessToken');
+  }
 }

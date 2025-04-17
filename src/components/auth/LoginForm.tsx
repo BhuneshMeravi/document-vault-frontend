@@ -15,7 +15,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { loginUser } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,7 +24,7 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      await loginUser(email, password);
       router.push("/dashboard");
     } catch (err) {
       setError("Invalid email or password. Please try again.");
