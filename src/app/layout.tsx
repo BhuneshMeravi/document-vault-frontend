@@ -2,15 +2,15 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
-import QueryProvider from "./providers"; // Import the client-side QueryProvider
+import QueryProvider from "./providers";
 import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Authentication System",
+  title: "Document Security System",
   description:
-    "Simple authentication system with Next.js, Tailwind CSS, and shadcn/ui",
+    "Document authentication system with Next.js, Tailwind CSS, and shadcn/ui",
 };
 
 export default function RootLayout({

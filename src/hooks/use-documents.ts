@@ -39,16 +39,12 @@ export function useDocuments({ page = 1, limit = 10, search = "" }: UseDocuments
     queryKey: ["documents", page, limit, search],
     queryFn: async () => {
       try {
-        // Get access token - ensure this is being set correctly
         const accessToken = localStorage.getItem('accessToken');
         
         if (!accessToken) {
           console.warn("No access token found in localStorage");
         }
         
-        console.log(`Fetching documents: page=${page}, limit=${limit}, search="${search}"`);
-        
-        // Make the API request
         const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/documents`, {
           params: {
             page,

@@ -1,11 +1,10 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
-import { AuthState, User } from "@/types/auth";
-import { getUserProfile, login, register, verifyAuth } from "@/lib/auth";
+import { createContext, useContext, useState } from "react";
+import { User } from "@/types/auth";
+import {login, register } from "@/lib/auth";
 import { useRouter } from "next/navigation";
-import { logout } from "@/lib/auth";
-import { log } from "console";
+
 
 interface AuthContextType {
   user: User | null;
@@ -22,26 +21,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // useEffect(() => {
-  //   const checkAuth = async () => {
-  //     setIsLoading(true);
-  //     try {
-  //       const { authenticated, user } = await verifyAuth();
-  //       if (authenticated && user) {
-  //         setUser(user);
-  //       } else {
-  //         setUser(null);
-  //       }
-  //     } catch (error) {
-  //       setUser(null);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
-
-  //   checkAuth();
-  // }, []);
-  
   const loginUser = async (email: string, password: string) => {
       setIsLoading(true);
       try {

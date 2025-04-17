@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Download, Share, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,11 +12,56 @@ import { useDocument } from "@/hooks/use-document";
 import { useDocumentAuditLogs } from "@/hooks/use-document-audit-logs";
 import { AuditLogsList } from "@/components/audit-logs-list";
 import { Skeleton } from "@/components/ui/skeleton";
+import axios from "axios";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 export default function DocumentDetailsPage({ params }: { params: { id: string } }) {
-  const { data: document, isLoading: isLoadingDocument } = useDocument(params.id);
-  const { data: auditLogs, isLoading: isLoadingAuditLogs } = useDocumentAuditLogs(params.id);
+  const router = useRouter();
+  const unwrappedParams = React.use(params);
+  const documentId = unwrappedParams.id;
+
+  const { data: document, isLoading: isLoadingDocument } = useDocument(documentId);
+  const { data: auditLogs, isLoading: isLoadingAuditLogs } = useDocumentAuditLogs(documentId);
   const [activeTab, setActiveTab] = useState("details");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/documents/${documentId}`, {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+      toast.success("Document deleted", {
+        description: "The document has been successfully deleted.",
+      });
+      router.push("/dashboard/files");
+    }
+    
+    catch (error) {
+      console.error("Failed to delete document:", error);
+      toast.error("Deletion failed", {
+        description: "Failed to delete the document. Please try again.",
+      });
+    }
+    finally {
+        setIsDeleting(false);
+        setDeleteDialogOpen(false);
+      }
+  };
 
   if (isLoadingDocument) {
     return (
@@ -68,9 +114,14 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
             <Share className="mr-2 h-4 w-4" />
             Share
           </Button>
-          <Button variant="destructive" size="sm">
+          <Button 
+            variant="destructive" 
+            size="sm" 
+            onClick={() => setDeleteDialogOpen(true)}
+            disabled={isDeleting}
+          >
             <Trash className="mr-2 h-4 w-4" />
-            Delete
+            {isDeleting ? "Deleting..." : "Delete"}
           </Button>
         </div>
       </div>
@@ -168,6 +219,28 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to delete this document?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the document "{document?.filename}" from the servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete} 
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

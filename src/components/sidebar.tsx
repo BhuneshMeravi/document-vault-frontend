@@ -81,15 +81,6 @@ export function Sidebar({ className }: SidebarNavProps) {
           </div>
         </div>
       </div>
-      <div className="absolute bottom-4 px-3 w-64">
-        <Button
-          variant="ghost"
-          className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-100"
-        >
-          <LogOut className="mr-2 h-4 w-4" />
-          Logout
-        </Button>
-      </div>
     </div>
   );
 }
