@@ -1,15 +1,12 @@
 import { fetchAPI } from "./api";
 
 export async function login(email: string, password: string) {
-  console.log("Logging in with:", { email });
   
   try {
     const response = await fetchAPI('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
-    
-    console.log("Login response:", response);
     
     if (response && response.accessToken) {
       localStorage.setItem('accessToken', response.accessToken);
@@ -31,7 +28,6 @@ export async function register(email: string, password: string, name: string) {
     body: JSON.stringify({ email, password, name }),
   });
 
-  // If registration is successful and returns a token immediately
   if (response && response.accessToken) {
     localStorage.setItem('accessToken', response.accessToken);
     document.cookie = `auth_token=${response.accessToken}; path=/; max-age=86400; samesite=strict`;
@@ -44,7 +40,6 @@ export async function register(email: string, password: string, name: string) {
 }
 }
 
-// Make sure this function is exported for the AuthContext to use
 export const registerUser = register;
 
 export async function getUserProfile() {

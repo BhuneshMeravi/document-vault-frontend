@@ -52,11 +52,7 @@ export function RegisterForm() {
     setIsLoading(true);
 
     try {
-      console.log("Attempting to register with:", { name, email });
       await registerUser(name, email, password);
-
-      console.log("Registration successful, redirecting to dashboard");
-
       // Use window.location for a full page reload
       setTimeout(() => {
         router.push("/dashboard");

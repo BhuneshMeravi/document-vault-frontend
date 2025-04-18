@@ -23,11 +23,9 @@ export async function fetchAPI(endpoint: string, options?: { method?: string; bo
       ...((options?.headers) ?? {}),
     },
   };
-  console.log(`API Request to ${endpoint}:`, { method: mergedOptions.method });
 
   try {
     const response = await fetch(`${API_URL}${endpoint}`, mergedOptions);
-    console.log(`API Response for ${endpoint}:`, { status: response.status, statusText: response.statusText });
     
     const contentType = response.headers.get('content-type');
     let data;

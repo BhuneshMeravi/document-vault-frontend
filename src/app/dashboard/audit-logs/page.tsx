@@ -15,11 +15,9 @@ export default function AuditLogsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const { data, isLoading } = useAuditLogs({ page, search, filter });
-
   // Make sure we're only rendering on the client
   const [isClient, setIsClient] = useState(false);
-  
-  // Use effect to set isClient to true after mount
+
   useEffect(() => {
     setIsClient(true);
   }, []);

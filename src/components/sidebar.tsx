@@ -8,9 +8,6 @@ import {
   Files,
   ClipboardList,
   Settings,
-  LogOut,
-  FileText,
-  Users,
   Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

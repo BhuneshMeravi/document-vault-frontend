@@ -57,11 +57,9 @@ export function useDocuments({ page = 1, limit = 10, search = "" }: UseDocuments
           }
         });
         
-        console.log("API Response:", response.data);
         
         // Check if response has the expected structure
         if (!response.data.data) {
-          console.error("Unexpected API response format:", response.data);
           throw new Error("Unexpected API response format");
         }
         

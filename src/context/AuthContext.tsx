@@ -36,7 +36,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       try {
         const response = await register(email, password, name);
-        console.log("Registration response:", response);
         
         if (response && response.user) {
           setUser(response.user);

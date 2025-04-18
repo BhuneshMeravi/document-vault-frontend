@@ -37,9 +37,7 @@ export function LoginForm() {
     }
 
     try {
-      console.log("Attempting to log in with email:", email);
       await loginUser(email, password);
-      console.log("Login successful, redirecting to dashboard");
       
       setIsRedirecting(true);
       

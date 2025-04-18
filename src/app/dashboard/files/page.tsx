@@ -33,19 +33,14 @@ export default function FilesPage() {
   const { data, isLoading, error, refetch } = useDocuments({ page, search });
 
   useEffect(() => {
-    // Debug logging
-    console.log("Document data:", data);
-    console.log("Is loading:", isLoading);
-    console.log("Error:", error);
   }, [data, isLoading, error]);
 
   function handleView(id: string) {
     router.push(`/dashboard/files/${id}`);
   }
 
-  // Handle successful upload
   const handleUploadComplete = () => {
-    refetch(); // Refresh the document list
+    refetch();
   };
 
   return (
