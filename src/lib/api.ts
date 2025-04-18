@@ -1,7 +1,11 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export async function fetchAPI(endpoint: string, options?: { method?: string; body?: string; headers?: Record<string, string> }) {
-  const accessToken = localStorage.getItem('accessToken');
+  let accessToken;
+  
+  if (typeof window !== 'undefined') {
+    accessToken = localStorage.getItem('accessToken');
+  }
   
   const defaultOptions = {
     headers: {
@@ -19,17 +23,30 @@ export async function fetchAPI(endpoint: string, options?: { method?: string; bo
       ...((options?.headers) ?? {}),
     },
   };
+  console.log(`API Request to ${endpoint}:`, { method: mergedOptions.method });
 
-  const response = await fetch(`${API_URL}${endpoint}`, mergedOptions);
-  
-  const contentType = response.headers.get('content-type');
-  const data = contentType && contentType.includes('application/json') 
-    ? await response.json() 
-    : await response.text();
-  
-  if (!response.ok) {
-    throw new Error(typeof data === 'object' && data.message ? data.message : 'API request failed');
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, mergedOptions);
+    console.log(`API Response for ${endpoint}:`, { status: response.status, statusText: response.statusText });
+    
+    const contentType = response.headers.get('content-type');
+    let data;
+    
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      data = await response.text();
+    }
+    
+    // if (!response.ok) {
+    //   const errorMessage = typeof data === 'object' && data.message ? data.message : 'API request failed';
+    //   console.error(`API Error (${response.status}):`, errorMessage);
+    //   throw new Error(errorMessage);
+    // }
+    
+    return data;
+  } catch (error) {
+    console.error(`API Error for ${endpoint}:`, error);
+    throw error;
   }
-  
-  return data;
 }

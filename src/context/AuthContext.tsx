@@ -32,19 +32,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-  const registerUser = async (name: string, email: string, password: string): Promise<void> => {
-    setIsLoading(true);
-    try {
-      const response = await register(email, password, name);
-      if (!response.ok) {
-        throw new Error("Registration failed");
+    const registerUser = async (name: string, email: string, password: string): Promise<void> => {
+      setIsLoading(true);
+      try {
+        const response = await register(email, password, name);
+        console.log("Registration response:", response);
+        
+        if (response && response.user) {
+          setUser(response.user);
+          router.push('/dashboard');
+        } else {
+          throw new Error("Registration succeeded but user data is missing");
+        }
+      } catch (error) {
+        console.error("Registration error:", error);
+        throw error;
+      } finally {
+        setIsLoading(false);
       }
-      setUser(response.user);
-      router.push('/dashboard');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
   const logout = async () => {
     setIsLoading(true);

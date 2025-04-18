@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -15,19 +15,39 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const { loginUser } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    if (isRedirecting) {
+      router.push("/dashboard");
+    }
+  }, [isRedirecting, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
 
+    if (!email || !password) {
+      setError("Email and password are required");
+      setIsLoading(false);
+      return;
+    }
+
     try {
+      console.log("Attempting to log in with email:", email);
       await loginUser(email, password);
-      router.push("/dashboard");
+      console.log("Login successful, redirecting to dashboard");
+      
+      setIsRedirecting(true);
+      
+      window.location.href = "/dashboard";
+      
     } catch (err) {
-      setError("Invalid email or password. Please try again.");
+      console.error("Login error:", err);
+      setError(err instanceof Error ? err.message : "Invalid email or password. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -75,8 +95,8 @@ export function LoginForm() {
               required
             />
           </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Logging in..." : "Login"}
+          <Button type="submit" className="w-full" disabled={isLoading || isRedirecting}>
+            {isLoading ? "Logging in..." : isRedirecting ? "Redirecting..." : "Login"}
           </Button>
         </form>
       </CardContent>

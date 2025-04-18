@@ -6,7 +6,14 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 
@@ -24,19 +31,43 @@ export function RegisterForm() {
     e.preventDefault();
     setError(null);
 
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please provide a valid email address");
+      return;
+    }
+
+    // Basic validation
     if (password !== confirmPassword) {
       setError("Passwords do not match");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long");
       return;
     }
 
     setIsLoading(true);
 
     try {
+      console.log("Attempting to register with:", { name, email });
       await registerUser(name, email, password);
-      router.push("/dashboard");
+
+      console.log("Registration successful, redirecting to dashboard");
+
+      // Use window.location for a full page reload
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 500);
     } catch (err) {
-      setError("Registration failed. Please try again.");
-    } finally {
+      console.error("Registration error:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Registration failed. Please try again."
+      );
       setIsLoading(false);
     }
   };
@@ -45,7 +76,9 @@ export function RegisterForm() {
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
         <CardTitle className="text-2xl">Create an account</CardTitle>
-        <CardDescription>Enter your details to create your account</CardDescription>
+        <CardDescription>
+          Enter your details to create your account
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {error && (
@@ -84,6 +117,7 @@ export function RegisterForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              minLength={8}
             />
           </div>
           <div className="space-y-2">
