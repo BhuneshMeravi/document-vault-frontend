@@ -1,72 +1,315 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
 export default function SettingsPage() {
+  // State for user ID and profile information
+  const [userId, setUserId] = useState("");
+  const [profile, setProfile] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+  });
+
+  // State for password change
+  const [passwordData, setPasswordData] = useState({
+    password: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+
+  // State for document preferences
   const [defaultEncryption, setDefaultEncryption] = useState(true);
-  const [saveApiKey, setSaveApiKey] = useState(false);
-  
+  const [documentExpiry, setDocumentExpiry] = useState(30);
+
+  // Handle profile form changes
+  const handleProfileChange = (e: { target: { id: any; value: any; }; }) => {
+    const { id, value } = e.target;
+    setProfile((prev) => ({
+      ...prev,
+      [id]: value,
+    }));
+  };
+
+  // Handle password form changes
+  const handlePasswordChange = (e: { target: { id: any; value: any; }; }) => {
+    const { id, value } = e.target;
+    setPasswordData((prev) => ({
+      ...prev,
+      [id]: value,
+    }));
+  };
+
+  // Update profile information
+  const updateProfile = async () => {
+    if (!userId) {
+      toast.error("Error", {
+        description: "User ID is missing. Please reload the page.",
+      });
+      return;
+    }
+
+    try {
+      const payload = {
+        name: `${profile.firstName} ${profile.lastName}`,
+        email: profile.email,
+        role: "user",
+      };
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "*/*",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        toast.success("Profile updated", {
+          description: "Your profile information has been updated successfully.",
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update profile");
+      }
+    } catch (error) {
+      toast.error("Error", {
+        description: `Failed to update profile: ${
+          error instanceof Error ? error.message : "An unknown error occurred"
+        }`,
+      });
+    }
+  };
+
+  const changePassword = async () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error("Password mismatch", {
+        description: "New password and confirmation do not match.",
+      });
+      return;
+    }
+
+    if (!userId) {
+      toast.error("Error", {
+        description: "User ID is missing. Please reload the page.",
+      });
+      return;
+    }
+
+    try {
+      const payload = {
+        password: passwordData.newPassword,
+      };
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "*/*",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        toast.success("Password updated", {
+          description: "Your password has been changed successfully.",
+        });
+
+        setPasswordData({
+          password: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to change password");
+      }
+    } catch (error) {
+      toast.error("Error", {
+        description:
+          error instanceof Error ? error.message : "An unknown error occurred",
+      });
+    }
+  };
+
+  // Save document preferences
+  const savePreferences = async () => {
+    if (!userId) {
+      toast.error("Error", {
+        description: "User ID is missing. Please reload the page.",
+      });
+      return;
+    }
+
+    try {
+      const payload = {
+        defaultEncryption,
+        documentExpiry,
+      };
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "*/*",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        toast.success("Preferences saved", {
+          description: "Your document preferences have been updated.",
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to save preferences");
+      }
+    } catch (error) {
+      toast.error("Error", {
+        description:
+          error instanceof Error ? error.message : "An unknown error occurred",
+      });
+    }
+  };
+
+  // Load user data on component mount
+  const fetchUserData = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/profile`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          Accept: "*/*",
+        },
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        
+        // Save the user ID
+        setUserId(userData.id);
+
+        // Split name into first and last name
+        const nameParts = userData.name.split(" ");
+        const firstName = nameParts[0] || "";
+        const lastName = nameParts.slice(1).join(" ") || "";
+
+        setProfile({
+          firstName,
+          lastName,
+          email: userData.email,
+        });
+
+        // Set other preferences if available
+        if (userData.preferences) {
+          setDefaultEncryption(userData.preferences.defaultEncryption);
+          setDocumentExpiry(userData.preferences.documentExpiry);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      toast.error("Error", {
+        description: "Failed to load user data. Please refresh the page.",
+      });
+    }
+  };
+
+  // useEffect to load user data on mount
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
-        <p className="text-muted-foreground">Manage your account settings and preferences</p>
+        <p className="text-muted-foreground">
+          Manage your account settings and preferences
+        </p>
       </div>
-      
+
       <Tabs defaultValue="general">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="api">API</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="general" className="space-y-4 mt-6">
           <Card>
             <CardHeader>
               <CardTitle>Profile</CardTitle>
-              <CardDescription>Update your personal information</CardDescription>
+              <CardDescription>
+                Update your personal information
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First name</Label>
-                  <Input id="firstName" placeholder="John" />
+                  <Input
+                    id="firstName"
+                    placeholder="John"
+                    value={profile.firstName}
+                    onChange={handleProfileChange}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last name</Label>
-                  <Input id="lastName" placeholder="Doe" />
+                  <Input
+                    id="lastName"
+                    placeholder="Doe"
+                    value={profile.lastName}
+                    onChange={handleProfileChange}
+                  />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="john.doe@example.com" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="company">Company</Label>
-                <Input id="company" placeholder="Acme Inc." />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="john.doe@example.com"
+                  value={profile.email}
+                  onChange={handleProfileChange}
+                />
               </div>
             </CardContent>
             <CardFooter>
-              <Button>Save Changes</Button>
+              <Button onClick={updateProfile}>Save Changes</Button>
             </CardFooter>
           </Card>
 
           <Card>
             <CardHeader>
               <CardTitle>Document Preferences</CardTitle>
-              <CardDescription>Configure your document settings</CardDescription>
+              <CardDescription>
+                Configure your document settings
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="defaultEncryption">Default Encryption</Label>
+                  <Label htmlFor="defaultEncryption">
+                    Default Encryption
+                  </Label>
                   <p className="text-sm text-muted-foreground">
                     Automatically encrypt all uploaded documents
                   </p>
@@ -79,22 +322,31 @@ export default function SettingsPage() {
               </div>
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Document Expiry</Label>
+                  <Label htmlFor="documentExpiry">Document Expiry</Label>
                   <p className="text-sm text-muted-foreground">
-                    Set default document expiration period
+                    Set default document expiration period (days)
                   </p>
                 </div>
                 <div className="w-[180px]">
-                  <Input type="number" min="1" placeholder="30" />
+                  <Input
+                    id="documentExpiry"
+                    type="number"
+                    min="1"
+                    placeholder="30"
+                    value={documentExpiry}
+                    onChange={(e) =>
+                      setDocumentExpiry(parseInt(e.target.value) || 30)
+                    }
+                  />
                 </div>
               </div>
             </CardContent>
             <CardFooter>
-              <Button>Save Preferences</Button>
+              <Button onClick={savePreferences}>Save Preferences</Button>
             </CardFooter>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="security" className="space-y-4 mt-6">
           <Card>
             <CardHeader>
@@ -103,92 +355,35 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="currentPassword">Current password</Label>
-                <Input id="currentPassword" type="password" />
+                <Label htmlFor="password">Current password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={passwordData.password}
+                  onChange={handlePasswordChange}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="newPassword">New password</Label>
-                <Input id="newPassword" type="password" />
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={handlePasswordChange}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm password</Label>
-                <Input id="confirmPassword" type="password" />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button>Change Password</Button>
-            </CardFooter>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Two-Factor Authentication</CardTitle>
-              <CardDescription>Add an extra layer of security to your account</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Two-Factor Authentication</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Enable two-factor authentication for your account
-                  </p>
-                </div>
-                <Button variant="outline">Enable 2FA</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="api" className="space-y-4 mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>API Keys</CardTitle>
-              <CardDescription>Manage your API keys</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="apiKey">Your API Key</Label>
-                <div className="flex space-x-2">
-                  <Input id="apiKey" value="sk_live_XX••••••••••••••••••••••••••••" readOnly />
-                  <Button variant="outline">Copy</Button>
-                  <Button variant="outline">Regenerate</Button>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="saveApiKey"
-                  checked={saveApiKey}
-                  onCheckedChange={setSaveApiKey}
-                />
-                <Label htmlFor="saveApiKey">Save API key in browser storage</Label>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Webhooks</CardTitle>
-              <CardDescription>Configure webhook endpoints</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="webhookUrl">Webhook URL</Label>
-                <Input id="webhookUrl" placeholder="https://your-app.com/webhook" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="webhookSecret">Webhook Secret</Label>
-                <Input id="webhookSecret" placeholder="whsec_..." />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="webhookEvents">Events to send</Label>
-                <Textarea 
-                  id="webhookEvents"
-                  placeholder="document.created,document.updated,document.deleted"
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={handlePasswordChange}
                 />
               </div>
             </CardContent>
             <CardFooter>
-              <Button>Save Webhook</Button>
+              <Button onClick={changePassword}>Change Password</Button>
             </CardFooter>
           </Card>
         </TabsContent>

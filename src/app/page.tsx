@@ -14,9 +14,7 @@ export default function HomePage() {
           <span className="font-bold text-xl">MyApp</span>
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
-          {isLoading ? (
-            <div>Loading...</div>
-          ) : isAuthenticated ? (
+          {isAuthenticated ? (
             <Link href="/dashboard">
               <Button variant="ghost">Dashboard</Button>
             </Link>
