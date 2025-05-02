@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Copy, Link, X } from "lucide-react";
+import { Copy, Link, Download, Eye } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import axios from "axios";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface DocumentShareDialogProps {
   isOpen: boolean;
@@ -28,8 +29,10 @@ export const DocumentShareDialog: React.FC<DocumentShareDialogProps> = ({
   documentName,
 }) => {
   const [accessLink, setAccessLink] = useState<string>("");
+  const [downloadLink, setDownloadLink] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [linkType, setLinkType] = useState<"view" | "download">("view");
 
   React.useEffect(() => {
     if (isOpen && documentId) {
@@ -53,9 +56,34 @@ export const DocumentShareDialog: React.FC<DocumentShareDialogProps> = ({
       );
       
       if (response.data && response.data.length > 0) {
-        setAccessLink(response.data[0].accessUrl);
+        // Base URL without download parameter
+        const baseUrl = response.data[0].accessUrl;
+        setAccessLink(baseUrl); // View link
+        setDownloadLink(`${baseUrl}?download=true`); // Download link
       } else {
-        throw new Error("No access link available");
+        // If no links exist, create a new one
+        const createResponse = await axios.post(
+          `${process.env.NEXT_PUBLIC_API_URL}/access-links`,
+          {
+            documentId: documentId,
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+          },
+          {
+            headers: {
+              "Accept": "application/json",
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${localStorage.getItem("accessToken")}`,
+            },
+          }
+        );
+        
+        if (createResponse.data && createResponse.data.accessUrl) {
+          const baseUrl = createResponse.data.accessUrl;
+          setAccessLink(baseUrl); // View link
+          setDownloadLink(`${baseUrl}?download=true`); // Download link
+        } else {
+          throw new Error("Failed to create access link");
+        }
       }
     } catch (err) {
       console.error("Failed to generate share link:", err);
@@ -69,9 +97,10 @@ export const DocumentShareDialog: React.FC<DocumentShareDialogProps> = ({
   };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(accessLink);
+    const linkToCopy = linkType === "view" ? accessLink : downloadLink;
+    navigator.clipboard.writeText(linkToCopy);
     toast.success("Link copied!", {
-      description: "Document link has been copied to clipboard.",
+      description: `${linkType === "view" ? "View" : "Download"} link has been copied to clipboard.`,
     });
   };
 
@@ -104,28 +133,64 @@ export const DocumentShareDialog: React.FC<DocumentShareDialogProps> = ({
           </div>
         ) : (
           <>
-            <div className="flex items-center space-x-2">
-              <div className="grid flex-1 gap-2">
-                <label htmlFor="link" className="sr-only">
-                  Share link
-                </label>
-                <div className="flex items-center">
-                  <Link className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="link"
-                    readOnly
-                    value={accessLink}
-                    className="font-mono text-sm"
-                  />
+            <Tabs defaultValue="view" onValueChange={(value) => setLinkType(value as "view" | "download")}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="view" className="flex items-center justify-center">
+                  <Eye className="mr-2 h-4 w-4" />
+                  View Link
+                </TabsTrigger>
+                <TabsTrigger value="download" className="flex items-center justify-center">
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Link
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="view" className="mt-4">
+                <div className="flex items-center space-x-2">
+                  <div className="grid flex-1 gap-2">
+                    <div className="flex items-center">
+                      <Link className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        readOnly
+                        value={accessLink}
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Recipients can view this document in their browser without downloading.
+                    </p>
+                  </div>
+                  <Button type="button" size="icon" onClick={copyToClipboard}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  This link expires in 1 month and allows anyone with the link to view this document.
-                </p>
-              </div>
-              <Button type="button" size="icon" onClick={copyToClipboard}>
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
+              </TabsContent>
+              
+              <TabsContent value="download" className="mt-4">
+                <div className="flex items-center space-x-2">
+                  <div className="grid flex-1 gap-2">
+                    <div className="flex items-center">
+                      <Download className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        readOnly
+                        value={downloadLink}
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Recipients will download this document directly to their device.
+                    </p>
+                  </div>
+                  <Button type="button" size="icon" onClick={copyToClipboard}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </TabsContent>
+            </Tabs>
+            
+            <p className="mt-4 text-xs text-muted-foreground">
+              Links expire in 30 days and allow anyone with the link to access this document.
+            </p>
           </>
         )}
         
