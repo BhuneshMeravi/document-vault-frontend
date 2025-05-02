@@ -41,6 +41,7 @@ import { formatBytes, formatDate } from "@/lib/utils";
 import { useDocuments } from "@/hooks/use-documents";
 import { Pagination } from "@/components/pagination";
 import { FileUploader } from "@/components/DocumentUploader";
+import { DocumentShareDialog } from "@/components/DocumentShareDialog";
 import { toast } from "sonner";
 
 export default function FilesPage() {
@@ -53,6 +54,17 @@ export default function FilesPage() {
     id: string;
     filename: string;
   } | null>(null);
+
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<{
+    id: string;
+    filename: string;
+  } | null>(null);
+
+  const handleShare = (document: { id: string; filename: string }) => {
+    setSelectedDocument(document);
+    setIsShareDialogOpen(true);
+  };
 
   useEffect(() => {}, [data, isLoading, error]);
 
@@ -127,14 +139,12 @@ export default function FilesPage() {
           />
         </div>
       </div>
-
       {/* Debug info */}
       {error && (
         <div className="p-4 mb-4 bg-red-100 text-red-700 rounded-md">
           Error loading documents: {error.message}
         </div>
       )}
-
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -201,7 +211,9 @@ export default function FilesPage() {
                           View details
                         </DropdownMenuItem>
                         <DropdownMenuItem>Download</DropdownMenuItem>
-                        <DropdownMenuItem>Share</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleShare(document)}>
+                          Share
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           className="text-red-600"
@@ -225,7 +237,6 @@ export default function FilesPage() {
           </TableBody>
         </Table>
       </div>
-
       {/* Let's also update the Pagination check */}
       {data?.meta && data.meta.pages > 1 && (
         <Pagination
@@ -234,7 +245,6 @@ export default function FilesPage() {
           onPageChange={setPage}
         />
       )}
-
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!documentToDelete} onOpenChange={handleDeleteCancel}>
         <AlertDialogContent>
@@ -257,6 +267,14 @@ export default function FilesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {selectedDocument && (
+        <DocumentShareDialog
+          isOpen={isShareDialogOpen}
+          onClose={() => setIsShareDialogOpen(false)}
+          documentId={selectedDocument.id}
+          documentName={selectedDocument.filename}
+        />
+      )}
     </div>
   );
 }

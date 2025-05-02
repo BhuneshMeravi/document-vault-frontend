@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Download, Share, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatBytes, formatDate } from "@/lib/utils";
 import { useDocument } from "@/hooks/use-document";
@@ -24,43 +30,51 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import DocumentShareDialog from "@/components/DocumentShareDialog";
 
-export default function DocumentDetailsPage({ params }: { params: { id: string } }) {
+export default function DocumentDetailsPage({
+  params,
+}: {
+  params: { id: string };
+}) {
   const router = useRouter();
   const unwrappedParams = React.use(params);
   const documentId = unwrappedParams.id;
 
-  const { data: document, isLoading: isLoadingDocument } = useDocument(documentId);
-  const { data: auditLogs, isLoading: isLoadingAuditLogs } = useDocumentAuditLogs(documentId);
+  const { data: document, isLoading: isLoadingDocument } =
+    useDocument(documentId);
+  const { data: auditLogs, isLoading: isLoadingAuditLogs } =
+    useDocumentAuditLogs(documentId);
   const [activeTab, setActiveTab] = useState("details");
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 
   const handleDelete = async () => {
     try {
       setIsDeleting(true);
-      await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/documents/${documentId}`, {
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      await axios.delete(
+        `${process.env.NEXT_PUBLIC_API_URL}/documents/${documentId}`,
+        {
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
         }
-      });
+      );
       toast.success("Document deleted", {
         description: "The document has been successfully deleted.",
       });
       router.push("/dashboard/files");
-    }
-    
-    catch (error) {
+    } catch (error) {
       console.error("Failed to delete document:", error);
       toast.error("Deletion failed", {
         description: "Failed to delete the document. Please try again.",
       });
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
     }
-    finally {
-        setIsDeleting(false);
-        setDeleteDialogOpen(false);
-      }
   };
 
   if (isLoadingDocument) {
@@ -86,7 +100,10 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
     return (
       <div className="flex h-[70vh] flex-col items-center justify-center">
         <h3 className="text-2xl font-bold">Document not found</h3>
-        <p className="text-muted-foreground">The document you're looking for doesn't exist or you don't have access to it.</p>
+        <p className="text-muted-foreground">
+          The document you're looking for doesn't exist or you don't have access
+          to it.
+        </p>
         <Button asChild className="mt-4">
           <Link href="/dashboard/files">Back to documents</Link>
         </Button>
@@ -103,20 +120,26 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h2 className="text-2xl font-bold tracking-tight">{document.filename}</h2>
+          <h2 className="text-2xl font-bold tracking-tight">
+            {document.filename}
+          </h2>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
             <Download className="mr-2 h-4 w-4" />
             Download
           </Button>
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsShareDialogOpen(true)}
+          >
             <Share className="mr-2 h-4 w-4" />
             Share
           </Button>
-          <Button 
-            variant="destructive" 
-            size="sm" 
+          <Button
+            variant="destructive"
+            size="sm"
             onClick={() => setDeleteDialogOpen(true)}
             disabled={isDeleting}
           >
@@ -141,23 +164,33 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
               <CardContent>
                 <dl className="space-y-4">
                   <div className="flex justify-between">
-                    <dt className="font-medium text-muted-foreground">File name:</dt>
+                    <dt className="font-medium text-muted-foreground">
+                      File name:
+                    </dt>
                     <dd>{document.filename}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="font-medium text-muted-foreground">File type:</dt>
+                    <dt className="font-medium text-muted-foreground">
+                      File type:
+                    </dt>
                     <dd>{document.contentType}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="font-medium text-muted-foreground">File size:</dt>
+                    <dt className="font-medium text-muted-foreground">
+                      File size:
+                    </dt>
                     <dd>{formatBytes(document.size)}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="font-medium text-muted-foreground">Uploaded:</dt>
+                    <dt className="font-medium text-muted-foreground">
+                      Uploaded:
+                    </dt>
                     <dd>{formatDate(document.createdAt)}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="font-medium text-muted-foreground">Last modified:</dt>
+                    <dt className="font-medium text-muted-foreground">
+                      Last modified:
+                    </dt>
                     <dd>{formatDate(document.updatedAt)}</dd>
                   </div>
                 </dl>
@@ -166,31 +199,55 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
             <Card>
               <CardHeader>
                 <CardTitle>Security</CardTitle>
-                <CardDescription>Security details for this document</CardDescription>
+                <CardDescription>
+                  Security details for this document
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <dl className="space-y-4">
                   <div className="flex justify-between">
-                    <dt className="font-medium text-muted-foreground">Encryption Status:</dt>
-                    <dd className={document.isEncrypted ? "text-green-600" : "text-amber-600"}>
+                    <dt className="font-medium text-muted-foreground">
+                      Encryption Status:
+                    </dt>
+                    <dd
+                      className={
+                        document.isEncrypted
+                          ? "text-green-600"
+                          : "text-amber-600"
+                      }
+                    >
                       {document.isEncrypted ? "Encrypted" : "Not Encrypted"}
                     </dd>
                   </div>
                   {document.isEncrypted && (
                     <div className="flex justify-between">
-                      <dt className="font-medium text-muted-foreground">Encryption IV:</dt>
-                      <dd className="font-mono text-sm">{document.encryptionIv}</dd>
+                      <dt className="font-medium text-muted-foreground">
+                        Encryption IV:
+                      </dt>
+                      <dd className="font-mono text-sm">
+                        {document.encryptionIv}
+                      </dd>
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <dt className="font-medium text-muted-foreground">File Hash:</dt>
-                    <dd className="max-w-[250px] truncate font-mono text-sm" title={document.hash}>
+                    <dt className="font-medium text-muted-foreground">
+                      File Hash:
+                    </dt>
+                    <dd
+                      className="max-w-[250px] truncate font-mono text-sm"
+                      title={document.hash}
+                    >
                       {document.hash}
                     </dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="font-medium text-muted-foreground">Owner ID:</dt>
-                    <dd className="max-w-[250px] truncate font-mono text-sm" title={document.ownerId}>
+                    <dt className="font-medium text-muted-foreground">
+                      Owner ID:
+                    </dt>
+                    <dd
+                      className="max-w-[250px] truncate font-mono text-sm"
+                      title={document.ownerId}
+                    >
                       {document.ownerId}
                     </dd>
                   </div>
@@ -203,7 +260,9 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
           <Card>
             <CardHeader>
               <CardTitle>Document Activity</CardTitle>
-              <CardDescription>Recent activities for this document</CardDescription>
+              <CardDescription>
+                Recent activities for this document
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {isLoadingAuditLogs ? (
@@ -224,15 +283,18 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to delete this document?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Are you sure you want to delete this document?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the document "{document?.filename}" from the servers.
+              This action cannot be undone. This will permanently delete the
+              document "{document?.filename}" from the servers.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDelete} 
+            <AlertDialogAction
+              onClick={handleDelete}
               disabled={isDeleting}
               className="bg-red-600 hover:bg-red-700"
             >
@@ -241,6 +303,12 @@ export default function DocumentDetailsPage({ params }: { params: { id: string }
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <DocumentShareDialog
+        isOpen={isShareDialogOpen}
+        onClose={() => setIsShareDialogOpen(false)}
+        documentId={documentId}
+        documentName={document?.filename || ""}
+      />
     </div>
   );
 }
