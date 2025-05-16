@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect, SetStateAction } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   CircleCheck,
   CircleAlert,
   MoreHorizontal,
   Search,
-  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,7 +65,11 @@ export default function FilesPage() {
     setIsShareDialogOpen(true);
   };
 
-  useEffect(() => {}, [data, isLoading, error]);
+  // Fixed dependency array
+  useEffect(() => {
+    // This effect intentionally has no implementation
+    // but tracks data, isLoading, and error states
+  }, [data, isLoading, error]);
 
   function handleView(id: string) {
     router.push(`/dashboard/files/${id}`);
@@ -113,7 +116,7 @@ export default function FilesPage() {
   };
 
   const handleDeleteRequest = (
-    document: SetStateAction<{ id: string; filename: string } | null>
+    document: { id: string; filename: string }
   ) => {
     setDocumentToDelete(document);
   };
@@ -160,9 +163,9 @@ export default function FilesPage() {
           <TableBody>
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
+                <TableRow key={`skeleton-${i}`}>
                   {Array.from({ length: 6 }).map((_, j) => (
-                    <TableCell key={j}>
+                    <TableCell key={`cell-${i}-${j}`}>
                       <div className="h-5 w-full animate-pulse rounded bg-muted"></div>
                     </TableCell>
                   ))}
@@ -237,7 +240,7 @@ export default function FilesPage() {
           </TableBody>
         </Table>
       </div>
-      {/* Let's also update the Pagination check */}
+      {/* Updated Pagination check */}
       {data?.meta && data.meta.pages > 1 && (
         <Pagination
           currentPage={page}
@@ -251,8 +254,8 @@ export default function FilesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the document "
-              {documentToDelete?.filename}". This action cannot be undone.
+              This will permanently delete the document&quot;
+              {documentToDelete?.filename}&quot;. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

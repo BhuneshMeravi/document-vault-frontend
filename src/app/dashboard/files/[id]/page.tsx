@@ -101,7 +101,7 @@ export default function DocumentDetailsPage({
       <div className="flex h-[70vh] flex-col items-center justify-center">
         <h3 className="text-2xl font-bold">Document not found</h3>
         <p className="text-muted-foreground">
-          The document you're looking for doesn't exist or you don't have access
+          The document you&#39;re looking for doesn&#39;t exist or you don&#39;t have access
           to it.
         </p>
         <Button asChild className="mt-4">
@@ -288,7 +288,7 @@ export default function DocumentDetailsPage({
             </AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the
-              document "{document?.filename}" from the servers.
+              document &#34;{document?.filename}&#34; from the servers.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

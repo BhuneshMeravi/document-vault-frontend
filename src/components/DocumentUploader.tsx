@@ -28,7 +28,7 @@ export function FileUploader({
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  const onDrop = useCallback((acceptedFiles: any) => {
+  const onDrop = useCallback((acceptedFiles: File[]) => {
     // Add files to state
     setFiles((prevFiles: FileWithPreview[]) => [
       ...prevFiles,
@@ -53,7 +53,7 @@ export function FileUploader({
     maxSize: 10485760, // 10MB
   });
 
-  const removeFile = (index: any) => {
+  const removeFile = (index: number) => {
     setFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
   };
 
@@ -123,7 +123,7 @@ export function FileUploader({
     }
   };
 
-  const formatBytes = (bytes: any, decimals = 2) => {
+  const formatBytes = (bytes: number, decimals = 2): string => {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;

@@ -15,8 +15,7 @@ export function ForgotPasswordForm() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [codeSent, setCodeSent] = useState(false);
-  const router = useRouter();
-
+  
   async function handleRequestReset(e: React.FormEvent) {
     e.preventDefault();
     setIsLoading(true);
@@ -40,8 +39,9 @@ export function ForgotPasswordForm() {
       
       setMessage(data.message);
       setCodeSent(true);
-    } catch (err: any) {
-      setError(err.message || "Failed to request password reset");
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error.message || "Failed to request password reset");
       console.error("Password reset request error:", err);
     } finally {
       setIsLoading(false);
@@ -105,7 +105,11 @@ export function ForgotPasswordForm() {
   );
 }
 
-function ResetPasswordForm({ email }: { email: string }) {
+interface ResetPasswordFormProps {
+  email: string;
+}
+
+function ResetPasswordForm({ email }: ResetPasswordFormProps) {
   const [formData, setFormData] = useState({
     email,
     code: "",
@@ -164,8 +168,9 @@ function ResetPasswordForm({ email }: { email: string }) {
       
       setMessage("Password reset successful!");
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.message || "Failed to reset password");
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error.message || "Failed to reset password");
       console.error("Password reset error:", err);
     } finally {
       setIsLoading(false);

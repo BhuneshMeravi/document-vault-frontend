@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Copy, Link, Download, Eye } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Copy, Link as LinkIcon, Download, Eye } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,69 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import axios from "axios";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+// Added explicit function type for generateShareLink
+const generateShareLink = async (
+  documentId: string,
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>,
+  setError: React.Dispatch<React.SetStateAction<string | null>>,
+  setAccessLink: React.Dispatch<React.SetStateAction<string>>,
+  setDownloadLink: React.Dispatch<React.SetStateAction<string>>
+) => {
+  setIsLoading(true);
+  setError(null);
+  
+  try {
+    const response = await axios.get(
+      `${process.env.NEXT_PUBLIC_API_URL}/access-links/document/${documentId}`,
+      {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      }
+    );
+    
+    if (response.data && response.data.length > 0) {
+      // Base URL without download parameter
+      const baseUrl = response.data[0].accessUrl;
+      setAccessLink(baseUrl); // View link
+      setDownloadLink(`${baseUrl}?download=true`); // Download link
+    } else {
+      // If no links exist, create a new one
+      const createResponse = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/access-links`,
+        {
+          documentId: documentId,
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+        },
+        {
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        }
+      );
+      
+      if (createResponse.data && createResponse.data.accessUrl) {
+        const baseUrl = createResponse.data.accessUrl;
+        setAccessLink(baseUrl); // View link
+        setDownloadLink(`${baseUrl}?download=true`); // Download link
+      } else {
+        throw new Error("Failed to create access link");
+      }
+    }
+  } catch (err) {
+    console.error("Failed to generate share link:", err);
+    setError("Failed to generate share link. Please try again.");
+    toast.error("Sharing failed", {
+      description: "Could not generate a sharing link for this document.",
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
 interface DocumentShareDialogProps {
   isOpen: boolean;
@@ -34,67 +97,19 @@ export const DocumentShareDialog: React.FC<DocumentShareDialogProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [linkType, setLinkType] = useState<"view" | "download">("view");
 
-  React.useEffect(() => {
+  // Fixed useEffect with proper dependency array
+  useEffect(() => {
     if (isOpen && documentId) {
-      generateShareLink();
-    }
-  }, [isOpen, documentId]);
-
-  const generateShareLink = async () => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/access-links/document/${documentId}`,
-        {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
+      // Use extracted function with the proper params
+      generateShareLink(
+        documentId,
+        setIsLoading,
+        setError,
+        setAccessLink,
+        setDownloadLink
       );
-      
-      if (response.data && response.data.length > 0) {
-        // Base URL without download parameter
-        const baseUrl = response.data[0].accessUrl;
-        setAccessLink(baseUrl); // View link
-        setDownloadLink(`${baseUrl}?download=true`); // Download link
-      } else {
-        // If no links exist, create a new one
-        const createResponse = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/access-links`,
-          {
-            documentId: documentId,
-            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
-          },
-          {
-            headers: {
-              "Accept": "application/json",
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${localStorage.getItem("accessToken")}`,
-            },
-          }
-        );
-        
-        if (createResponse.data && createResponse.data.accessUrl) {
-          const baseUrl = createResponse.data.accessUrl;
-          setAccessLink(baseUrl); // View link
-          setDownloadLink(`${baseUrl}?download=true`); // Download link
-        } else {
-          throw new Error("Failed to create access link");
-        }
-      }
-    } catch (err) {
-      console.error("Failed to generate share link:", err);
-      setError("Failed to generate share link. Please try again.");
-      toast.error("Sharing failed", {
-        description: "Could not generate a sharing link for this document.",
-      });
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [isOpen, documentId]); // Added documentId as dependency
 
   const copyToClipboard = () => {
     const linkToCopy = linkType === "view" ? accessLink : downloadLink;
@@ -110,7 +125,7 @@ export const DocumentShareDialog: React.FC<DocumentShareDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Share Document</DialogTitle>
           <DialogDescription>
-            Share "{documentName}" securely with others
+            Share &quot;{documentName}&quot; securely with others
           </DialogDescription>
         </DialogHeader>
         
@@ -126,7 +141,15 @@ export const DocumentShareDialog: React.FC<DocumentShareDialogProps> = ({
             <Button 
               variant="outline" 
               className="mt-4 w-full" 
-              onClick={generateShareLink}
+              onClick={() => 
+                generateShareLink(
+                  documentId,
+                  setIsLoading,
+                  setError,
+                  setAccessLink,
+                  setDownloadLink
+                )
+              }
             >
               Try Again
             </Button>
@@ -149,7 +172,7 @@ export const DocumentShareDialog: React.FC<DocumentShareDialogProps> = ({
                 <div className="flex items-center space-x-2">
                   <div className="grid flex-1 gap-2">
                     <div className="flex items-center">
-                      <Link className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <LinkIcon className="mr-2 h-4 w-4 text-muted-foreground" />
                       <Input
                         readOnly
                         value={accessLink}

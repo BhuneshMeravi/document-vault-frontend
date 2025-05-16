@@ -14,31 +14,47 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+
+interface ProfileData {
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+interface PasswordData {
+  password: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+interface UserPreferences {
+  defaultEncryption: boolean;
+  documentExpiry: number;
+}
 
 export default function SettingsPage() {
   // State for user ID and profile information
-  const [userId, setUserId] = useState("");
-  const [profile, setProfile] = useState({
+  const [userId, setUserId] = useState<string>("");
+  const [profile, setProfile] = useState<ProfileData>({
     firstName: "",
     lastName: "",
     email: "",
   });
 
   // State for password change
-  const [passwordData, setPasswordData] = useState({
+  const [passwordData, setPasswordData] = useState<PasswordData>({
     password: "",
     newPassword: "",
     confirmPassword: "",
   });
 
   // State for document preferences
-  const [defaultEncryption, setDefaultEncryption] = useState(true);
-  const [documentExpiry, setDocumentExpiry] = useState(30);
+  const [defaultEncryption, setDefaultEncryption] = useState<boolean>(true);
+  const [documentExpiry, setDocumentExpiry] = useState<number>(30);
 
   // Handle profile form changes
-  const handleProfileChange = (e: { target: { id: any; value: any; }; }) => {
+  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setProfile((prev) => ({
       ...prev,
@@ -47,7 +63,7 @@ export default function SettingsPage() {
   };
 
   // Handle password form changes
-  const handlePasswordChange = (e: { target: { id: any; value: any; }; }) => {
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setPasswordData((prev) => ({
       ...prev,
@@ -160,7 +176,7 @@ export default function SettingsPage() {
     }
 
     try {
-      const payload = {
+      const payload: UserPreferences = {
         defaultEncryption,
         documentExpiry,
       };
@@ -334,7 +350,7 @@ export default function SettingsPage() {
                     min="1"
                     placeholder="30"
                     value={documentExpiry}
-                    onChange={(e) =>
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setDocumentExpiry(parseInt(e.target.value) || 30)
                     }
                   />

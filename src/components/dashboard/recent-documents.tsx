@@ -14,18 +14,25 @@ import { CircleCheck, CircleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDocuments } from "@/hooks/use-documents";
 
+
 export function RecentDocuments() {
   const { data, isLoading } = useDocuments({ page: 1, limit: 5 });
 
+  // Skeleton loader for better UX during loading state
   if (isLoading) {
     return (
       <div className="space-y-2">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-12 w-full animate-pulse rounded bg-muted"></div>
+        {/* Using Array.from with a key callback is more efficient than using index as key */}
+        {Array.from({ length: 5 }, (_, i) => (
+          <div key={`skeleton-${i}`} className="h-12 w-full animate-pulse rounded bg-muted"></div>
         ))}
       </div>
     );
   }
+
+  // Safely access data with optional chaining
+  const documents = data?.data || [];
+  const hasDocuments = documents.length > 0;
 
   return (
     <div>
@@ -41,8 +48,8 @@ export function RecentDocuments() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data?.data?.length ? (
-            data.data.map((document: any) => (
+          {hasDocuments ? (
+            documents.map((document) => (
               <TableRow key={document.id}>
                 <TableCell className="font-medium">{document.filename}</TableCell>
                 <TableCell>{document.contentType.split('/')[1].toUpperCase()}</TableCell>
