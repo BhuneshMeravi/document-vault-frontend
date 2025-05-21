@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import { use } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Download, Share, Trash } from "lucide-react";
@@ -32,14 +33,14 @@ import {
 import { toast } from "sonner";
 import DocumentShareDialog from "@/components/DocumentShareDialog";
 
-export default function DocumentDetailsPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+// Remove the PageProps interface entirely
+
+// Use the Next.js App Router pattern for page components
+export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const unwrappedParams = React.use(params);
-  const documentId = unwrappedParams.id;
+  // const documentId = params.id;
+  const {id} =  use(params);
+  const documentId = id as string;
 
   const { data: document, isLoading: isLoadingDocument } =
     useDocument(documentId);
@@ -49,6 +50,24 @@ export default function DocumentDetailsPage({
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+
+  // Cache document data to prevent re-renders
+  const [cachedDocument, setCachedDocument] = useState(document);
+
+  useEffect(() => {
+    if (document && document !== cachedDocument) {
+      setCachedDocument(document);
+    }
+  }, [document, cachedDocument]);
+
+  // Memoize the download handler to prevent recreating on each render
+  const handleDownload = React.useCallback(() => {
+    if (!document) return;
+    
+    // Download logic here
+    const link =`${process.env.NEXT_PUBLIC_API_URL}/documents/${documentId}/download`;
+    window.open(link, '_blank');
+  }, [document, documentId]);
 
   const handleDelete = async () => {
     try {
@@ -91,7 +110,7 @@ export default function DocumentDetailsPage({
             <Skeleton className="h-10 w-24" />
           </div>
         </div>
-        <Skeleton className="h-[600px] w-full" />
+        <Skeleton className="h-96 w-full" />
       </div>
     );
   }
@@ -125,7 +144,7 @@ export default function DocumentDetailsPage({
           </h2>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleDownload}>
             <Download className="mr-2 h-4 w-4" />
             Download
           </Button>
@@ -150,7 +169,7 @@ export default function DocumentDetailsPage({
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <TabsList className="w-full sm:w-auto">
           <TabsTrigger value="details">Document Details</TabsTrigger>
           <TabsTrigger value="activity">Activity Log</TabsTrigger>
         </TabsList>
